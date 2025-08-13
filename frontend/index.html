@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MesoDeities — Sumerian RAG</title>
+  <link rel="stylesheet" href="/assets/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="gradient-bg"></div>
+  <header class="header">
+    <h1 class="title">MesoDeities</h1>
+    <p class="subtitle">Ask about a Mesopotamian deity — grounded in Wikipedia.</p>
+  </header>
+  <main class="container">
+    <section class="card ask">
+      <label for="q" class="label">Your question</label>
+      <div class="input-row">
+        <input id="q" class="input" placeholder="e.g., Tell me about Enlil, or Who is the Sumerian god of knowledge?" />
+        <select id="lang" class="select">
+          <option value="en" selected>English</option>
+          <option value="pt">Português</option>
+        </select>
+        <button id="askBtn" class="btn">Ask</button>
+      </div>
+      <div id="status" class="status"></div>
+    </section>
+    <section class="card answer">
+      <h2>Answer</h2>
+      <div id="answer" class="answer-box"></div>
+      <div id="suggestions" class="suggestions"></div>
+    </section>
+  </main>
+  <footer class="footer">
+    <span>Built with Hugging Face + LlamaIndex + FAISS • No OpenAI</span>
+    <a href="https://en.wikipedia.org/wiki/List_of_Mesopotamian_deities" target="_blank" rel="noopener">Source page</a>
+  </footer>
+  <script src="/assets/app.js"></script>
+</body>
+</html>

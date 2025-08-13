@@ -21,16 +21,27 @@ class MesoRAG:
         self._catalog = None
 
     def setup_models(self):
-        if Settings.llm is not None and Settings.embed_model is not None:
-            return
         dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
-        Settings.llm = HuggingFaceLLM.from_model_id(
-            model_id=CONFIG.LLM_ID,
-            task="text-generation",
+        tok = AutoTokenizer.from_pretrained(CONFIG.LLM_ID)
+        llm_model = AutoModelForCausalLM.from_pretrained(
+            CONFIG.LLM_ID,
             device_map="auto",
-            model_kwargs={"torch_dtype": dtype, "low_cpu_mem_usage": True},
+            torch_dtype=dtype,
+            low_cpu_mem_usage=True,
+            # trust_remote_code=True, 
+        )
+        Settings.llm = HuggingFaceLLM(
+            model=llm_model,
+            tokenizer=tok,
         )
         Settings.embed_model = HuggingFaceEmbedding(model_name=CONFIG.EMB_ID)
+        Settings.context_window = 2048
+        Settings.generate_kwargs = {
+            "do_sample": True,
+            "temperature": 0.5,
+            "top_p": 0.9,
+            "max_new_tokens": 320,
+        }
 
     def fetch_html(self, url: str) -> str:
         headers = {"User-Agent": "Mozilla/5.0 (edu; meso-rag)"}

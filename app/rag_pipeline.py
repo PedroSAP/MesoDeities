@@ -6,6 +6,7 @@ import pandas as pd
 from typing import Optional
 from bs4 import BeautifulSoup
 from unidecode import unidecode
+from io import StringIO
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from llama_index.core import Settings, Document, VectorStoreIndex, StorageContext
@@ -57,13 +58,18 @@ class MesoRAG:
         text = re.sub(r"\n{2,}", "\n\n", text).strip()
         return text
 
+
     def parse_tables(self, html: str) -> pd.DataFrame:
+        # 1) Read tables from a file-like object (fixes FutureWarning)
         try:
-            tables = pd.read_html(html)
+            tables = pd.read_html(StringIO(html))  # optional: flavor="lxml"
         except ValueError:
             tables = []
+
         if not tables:
             return pd.DataFrame(columns=["name","domain","description","culture","type","aka","name_norm"])
+
+        # 2) Normalize columns heuristically
         def normalize_cols(df: pd.DataFrame) -> pd.DataFrame:
             mapping = {}
             for c in df.columns:
@@ -83,20 +89,38 @@ class MesoRAG:
                 else:
                     mapping[c] = lc
             return df.rename(columns=mapping)
+
         cands = []
         for df in [normalize_cols(d) for d in tables]:
             if "name" in df.columns:
                 cols = [c for c in df.columns if c in {"name","domain","description","culture","type","aka"}]
                 if len(cols) >= 2:
                     cands.append(df[cols].copy())
+
         if not cands:
             return pd.DataFrame(columns=["name","domain","description","culture","type","aka","name_norm"])
+
+        # 3) Clean up with vectorized string ops (fixes .strip() error)
         cat = pd.concat(cands, ignore_index=True).dropna(how="all")
         for c in cat.columns:
-            cat[c] = cat[c].astype(str).strip()
+            # astype(str) + .str.strip() (NOT .strip())
+            cat[c] = cat[c].astype(str).str.strip()
+
+        # 4) Normalized key + simple dedup
         cat["name_norm"] = cat["name"].apply(lambda s: unidecode(str(s)).lower())
-        cat.sort_values(by=["name_norm","description"], key=lambda s: s.str.len(), ascending=[True, False], inplace=True)
+        # prefer rows with longer descriptions when deduping
+        if "description" in cat.columns:
+            cat.sort_values(
+                by=["name_norm", "description"],
+                key=lambda s: s.str.len() if s.dtype == "object" else s,
+                ascending=[True, False],
+                inplace=True,
+            )
+        else:
+            cat.sort_values(by=["name_norm"], inplace=True)
+
         cat = cat.drop_duplicates(subset=["name_norm"], keep="first")
+
         return cat
 
     def build_catalog_profiles(self, cat: pd.DataFrame) -> pd.DataFrame:

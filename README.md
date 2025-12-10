@@ -172,8 +172,7 @@ Dockerfile
 
 ---
 
-## 📝 License & credits
+## 📝 Credits
 
-- Code: MIT (add your LICENSE).  
 - Uses public models from **Hugging Face** and **LlamaIndex**.  
 - Source data: [Wikipedia — List of Mesopotamian deities](https://en.wikipedia.org/wiki/List_of_Mesopotamian_deities).
